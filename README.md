@@ -48,3 +48,21 @@ You should see this output
 ```shell
 Database connection: 127.0.0.1:5432
 ```
+
+## Roadmap
+
+### Currently supported
+
+- string
+- int
+- bool
+- nested struct of any supported types
+
+### Planned support
+
+- slice of any supported type
+  - needs to support default delimiters for windows and unix
+  - needs to add `delimiter=` struct tag
+- `env.Unmarshaler` interface
+- `time.Time` (might be solved by the next point)
+- `json.Unmarshaler` support
