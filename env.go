@@ -37,14 +37,14 @@ func loadStruct(rv reflect.Value) error {
 		if val.Kind() == reflect.Struct {
 			err := loadStruct(val)
 			if err != nil {
-				return err
+				return fmt.Errorf("loading struct %s: %w", field.Name, err)
 			}
 			continue
 
 		}
 		err := loadField(field, val)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading field %s: %w", field.Name, err)
 		}
 	}
 	return nil
@@ -56,19 +56,22 @@ func loadField(field reflect.StructField, val reflect.Value) error {
 		t = stringToEnvVar(field.Name)
 	}
 	env := os.Getenv(t)
+	if env == "" {
+		return nil
+	}
 	switch val.Kind() {
 	case reflect.String:
 		val.SetString(env)
 	case reflect.Int:
 		i, err := strconv.ParseInt(env, 10, 0)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading \"%s\" as int: %w", env, err)
 		}
 		val.SetInt(i)
 	case reflect.Bool:
 		b, err := strconv.ParseBool(env)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading \"%s\" as bool: %w", env, err)
 		}
 		val.SetBool(b)
 	}

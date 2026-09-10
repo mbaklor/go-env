@@ -21,6 +21,12 @@ type nestedStruct struct {
 	Sixth  string
 }
 
+type unsetVars struct {
+	UnsetString string `env:"UNSET_STRING"`
+	UnsetInt    int    `env:"UNSET_INT"`
+	UnsetBool   bool   `env:"UNSET_BOOL"`
+}
+
 func setEnvVars() {
 	os.Setenv("FIRST", "a string")
 	os.Setenv("SECOND", "1234")
@@ -49,4 +55,10 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, -987, tt.Nested.Fifth)
 	assert.Equal(t, "", tt.Nested.Sixth)
 
+	var unset unsetVars
+	err = env.Load(&unset)
+	assert.NoError(t, err)
+	assert.Equal(t, "", unset.UnsetString)
+	assert.Equal(t, 0, unset.UnsetInt)
+	assert.Equal(t, false, unset.UnsetBool)
 }
