@@ -5,11 +5,9 @@ A small package to read environment variables into a struct.
 I wanted something that works like json unmarshalling, using struct tags to
 indicate the name of the environment variable.
 
-
 ```shell
-go get github.com/mbaklor/env
+go get github.com/mbaklor/go-env
 ```
-
 
 ## How to use
 
@@ -19,7 +17,7 @@ package main
 import (
         "fmt"
 
-        "github.com/mbaklor/env"
+        "github.com/mbaklor/go-env"
 )
 
 type Config struct {
@@ -44,6 +42,7 @@ Set the environment variables and run the program
 ```shell
 DATABASE_HOST=127.0.0.1 DATABASE_PORT=5432 go run main.go
 ```
+
 You should see this output
 
 ```shell
