@@ -1,4 +1,4 @@
-# ENV
+# go-ENV
 
 A small package to read environment variables into a struct.
 

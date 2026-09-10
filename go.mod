@@ -1,4 +1,4 @@
-module github.com/mbaklor/env
+module github.com/mbaklor/go-env
 
 go 1.26.5
 

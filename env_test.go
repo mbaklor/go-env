@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mbaklor/env"
+	"github.com/mbaklor/go-env"
 	"github.com/stretchr/testify/assert"
 )
 
