@@ -1,12 +1,27 @@
 package env_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/mbaklor/go-env"
 	"github.com/stretchr/testify/assert"
 )
+
+func setEnvs(t *testing.T) {
+	t.Setenv("FIRST", "a string")
+	t.Setenv("SECOND", "1234")
+	t.Setenv("THIRD", "more string")
+	t.Setenv("FOURTH", "true")
+	t.Setenv("FIFTH", "-987")
+
+	t.Setenv("STRING", "test")
+	t.Setenv("INT", "345")
+	t.Setenv("BOOL", "true")
+	t.Setenv("SHOULD_ZERO", "false")
+	t.Setenv("NEST_STRING", "nested")
+	t.Setenv("NEST_STRING_PTR", "nested pointer")
+
+}
 
 func TestLoad(t *testing.T) {
 	type nestedStruct struct {
@@ -28,11 +43,7 @@ func TestLoad(t *testing.T) {
 		UnsetBool   bool   `env:"UNSET_BOOL"`
 	}
 
-	os.Setenv("FIRST", "a string")
-	os.Setenv("SECOND", "1234")
-	os.Setenv("THIRD", "more string")
-	os.Setenv("FOURTH", "true")
-	os.Setenv("FIFTH", "-987")
+	setEnvs(t)
 
 	fail := "should fail"
 	err := env.Load(fail)
@@ -94,12 +105,7 @@ func TestPtrLoad(t *testing.T) {
 	assert.Nil(t, s.Struct)
 	assert.Nil(t, s.NilStruct)
 
-	os.Setenv("STRING", "test")
-	os.Setenv("INT", "345")
-	os.Setenv("BOOL", "true")
-	os.Setenv("SHOULD_ZERO", "false")
-	os.Setenv("NEST_STRING", "nested")
-	os.Setenv("NEST_STRING_PTR", "nested pointer")
+	setEnvs(t)
 
 	err = env.Load(&s)
 	assert.NoError(t, err)
@@ -112,7 +118,7 @@ func TestPtrLoad(t *testing.T) {
 	assert.Equal(t, "nested", s.Struct.NestString)
 	assert.Equal(t, "nested pointer", *s.Struct.NestStringPtr)
 
-	os.Setenv("NO_STRING", "test")
+	t.Setenv("NO_STRING", "test")
 	err = env.Load(&s)
 	assert.NoError(t, err)
 	assert.NotNil(t, s.NilStruct)
