@@ -59,3 +59,61 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, 0, unset.UnsetInt)
 	assert.Equal(t, false, unset.UnsetBool)
 }
+
+func TestPtrLoad(t *testing.T) {
+	type nestedPtr struct {
+		NestString    string
+		NestStringPtr *string
+	}
+
+	type shouldNilPtr struct {
+		NoString  string  `env:"NO_STRING"`
+		NoInt     int     `env:"NO_INT"`
+		NoBool    bool    `env:"NO_BOOL"`
+		NoPointer *string `env:"NO_POINTER"`
+	}
+
+	type prtVars struct {
+		String     *string `env:"STRING"`
+		Int        *int    `env:"INT"`
+		Bool       *bool   `env:"BOOL"`
+		ShouldZero *bool   `env:"SHOULD_ZERO"`
+		ShouldNil  *bool
+		Struct     *nestedPtr
+		NilStruct  *shouldNilPtr
+	}
+
+	var s prtVars
+	err := env.Load(&s)
+	assert.NoError(t, err)
+	assert.Nil(t, s.String)
+	assert.Nil(t, s.Int)
+	assert.Nil(t, s.Bool)
+	assert.Nil(t, s.ShouldZero)
+	assert.Nil(t, s.ShouldNil)
+	assert.Nil(t, s.Struct)
+	assert.Nil(t, s.NilStruct)
+
+	os.Setenv("STRING", "test")
+	os.Setenv("INT", "345")
+	os.Setenv("BOOL", "true")
+	os.Setenv("SHOULD_ZERO", "false")
+	os.Setenv("NEST_STRING", "nested")
+	os.Setenv("NEST_STRING_PTR", "nested pointer")
+
+	err = env.Load(&s)
+	assert.NoError(t, err)
+	assert.Equal(t, "test", *s.String)
+	assert.Equal(t, 345, *s.Int)
+	assert.Equal(t, true, *s.Bool)
+	assert.Equal(t, false, *s.ShouldZero)
+	assert.Nil(t, s.ShouldNil)
+	assert.Nil(t, s.NilStruct)
+	assert.Equal(t, "nested", s.Struct.NestString)
+	assert.Equal(t, "nested pointer", *s.Struct.NestStringPtr)
+
+	os.Setenv("NO_STRING", "test")
+	err = env.Load(&s)
+	assert.NoError(t, err)
+	assert.NotNil(t, s.NilStruct)
+}

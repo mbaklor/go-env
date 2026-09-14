@@ -26,56 +26,88 @@ func Load(v any) error {
 	if rv.Kind() != reflect.Struct {
 		return fmt.Errorf("%s is not a struct", rv.Type().Name())
 	}
-	return loadStruct(rv)
+	_, err := loadStruct(rv)
+	return err
 }
 
-func loadStruct(rv reflect.Value) error {
+func loadStruct(rv reflect.Value) (set bool, err error) {
 	for field, val := range rv.Fields() {
 		if !val.CanSet() {
 			continue
 		}
-		if val.Kind() == reflect.Struct {
-			err := loadStruct(val)
+		if val.Kind() == reflect.Pointer {
+			ptrSet, err := loadPtr(field, val)
 			if err != nil {
-				return fmt.Errorf("loading struct %s: %w", field.Name, err)
+				return false, fmt.Errorf("loading pointer %s: %w", field.Name, err)
 			}
+			set = set || ptrSet
+			continue
+		}
+		if val.Kind() == reflect.Struct {
+			structSet, err := loadStruct(val)
+			if err != nil {
+				return false, fmt.Errorf("loading struct %s: %w", field.Name, err)
+			}
+			set = set || structSet
 			continue
 
 		}
-		err := loadField(field, val)
+		fieldSet, err := loadField(field, val)
 		if err != nil {
-			return fmt.Errorf("loading field %s: %w", field.Name, err)
+			return false, fmt.Errorf("loading field %s: %w", field.Name, err)
 		}
+		set = set || fieldSet
 	}
-	return nil
+	return set, nil
 }
 
-func loadField(field reflect.StructField, val reflect.Value) error {
+func loadField(field reflect.StructField, val reflect.Value) (set bool, err error) {
 	t := field.Tag.Get("env")
 	if t == "" {
 		t = stringToEnvVar(field.Name)
 	}
 	env := os.Getenv(t)
 	if env == "" {
-		return nil
+		return false, nil
 	}
 	switch val.Kind() {
 	case reflect.String:
 		val.SetString(env)
+		set = true
 	case reflect.Int:
 		i, err := strconv.ParseInt(env, 10, 0)
 		if err != nil {
-			return fmt.Errorf("loading \"%s\" as int: %w", env, err)
+			return false, fmt.Errorf("loading \"%s\" as int: %w", env, err)
 		}
 		val.SetInt(i)
+		set = true
 	case reflect.Bool:
 		b, err := strconv.ParseBool(env)
 		if err != nil {
-			return fmt.Errorf("loading \"%s\" as bool: %w", env, err)
+			return false, fmt.Errorf("loading \"%s\" as bool: %w", env, err)
 		}
 		val.SetBool(b)
+		set = true
+	default:
+		return false, nil
 	}
-	return nil
+	return set, nil
+}
+
+func loadPtr(field reflect.StructField, val reflect.Value) (set bool, err error) {
+	newval := reflect.New(field.Type.Elem()).Elem()
+	if newval.Kind() == reflect.Struct {
+		set, err = loadStruct(newval)
+	} else {
+		set, err = loadField(field, newval)
+	}
+	if err != nil {
+		return false, err
+	}
+	if set {
+		val.Set(newval.Addr())
+	}
+	return set, nil
 }
 
 // Takes a camel case string and converts it to upper case snake string

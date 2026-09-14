@@ -57,6 +57,7 @@ Database connection: 127.0.0.1:5432
 - int
 - bool
 - nested struct of any supported types
+- pointer to any supported type
 
 ### Planned support
 
