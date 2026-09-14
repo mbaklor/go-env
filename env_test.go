@@ -8,35 +8,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testType struct {
-	First  string `env:"FIRST"`
-	Second int    `env:"SECOND"`
-	Third  string `env:"THIRD"`
-	Nested nestedStruct
-}
+func TestLoad(t *testing.T) {
+	type nestedStruct struct {
+		Fourth bool `env:"FOURTH"`
+		Fifth  int
+		Sixth  string
+	}
 
-type nestedStruct struct {
-	Fourth bool `env:"FOURTH"`
-	Fifth  int
-	Sixth  string
-}
+	type testType struct {
+		First  string `env:"FIRST"`
+		Second int    `env:"SECOND"`
+		Third  string `env:"THIRD"`
+		Nested nestedStruct
+	}
 
-type unsetVars struct {
-	UnsetString string `env:"UNSET_STRING"`
-	UnsetInt    int    `env:"UNSET_INT"`
-	UnsetBool   bool   `env:"UNSET_BOOL"`
-}
+	type unsetVars struct {
+		UnsetString string `env:"UNSET_STRING"`
+		UnsetInt    int    `env:"UNSET_INT"`
+		UnsetBool   bool   `env:"UNSET_BOOL"`
+	}
 
-func setEnvVars() {
 	os.Setenv("FIRST", "a string")
 	os.Setenv("SECOND", "1234")
 	os.Setenv("THIRD", "more string")
 	os.Setenv("FOURTH", "true")
 	os.Setenv("FIFTH", "-987")
-}
 
-func TestLoad(t *testing.T) {
-	setEnvVars()
 	fail := "should fail"
 	err := env.Load(fail)
 	assert.Error(t, err)
