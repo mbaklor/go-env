@@ -49,6 +49,46 @@ You should see this output
 Database connection: 127.0.0.1:5432
 ```
 
+## Secondary Use: Load .env Files
+
+This package can also be used to load `.env` files.
+
+For exmple if you have
+
+```env
+# .env
+
+DATABASE_HOST=127.0.0.1
+DATABASE_PORT=5432
+```
+
+You can add to the `main` function above
+
+```go
+
+func main() {
+        var c Config
+
+        if err := env.LoadFiles(); err != nil {
+                fmt.Printf("Failed to set env vars from file: %s\n", err)
+        }
+
+        err := env.Load(&c)
+        // continue as example above
+```
+
+and after a
+
+```shell
+go run .
+```
+
+the shell output should still be
+
+```shell
+Database connection: 127.0.0.1:5432
+```
+
 ## Roadmap
 
 ### Currently supported
