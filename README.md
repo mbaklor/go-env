@@ -53,17 +53,16 @@ Database connection: 127.0.0.1:5432
 
 ### Currently supported
 
+- use `env:"-"` to skip a field
 - string
 - int
 - bool
+- slice of any of the above, including use of a custom delimiter with `delim=`
 - nested struct of any supported types
 - pointer to any supported type
 
 ### Planned support
 
-- slice of any supported type
-  - needs to support default delimiters for windows and unix
-  - needs to add `delimiter=` struct tag
 - `env.Unmarshaler` interface
 - `time.Time` (might be solved by the next point)
 - `json.Unmarshaler` support
