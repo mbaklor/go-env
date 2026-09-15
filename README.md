@@ -126,3 +126,20 @@ Database connection: 127.0.0.1:5432
 - `env.Unmarshaler` interface
 - `time.Time` (might be solved by the next point)
 - `json.Unmarshaler` support
+
+## Other (frankly better) projects
+
+I will admit this project is mostly a vanity "let's see how I do this" kind of
+deal. I mostly just hyperfixated on it one night and am now running this
+fixation until I ultimately burn through the obsession.
+
+I didn't look at the code for or try to use any of the other myriad env struct
+tag loaders, but after I finished my first working version I was curious and
+found about 100 `goenv` `go-env` or simply `env` packages.
+
+My assumption is any one of those will be more mature and fleshed out than this
+project, so please go check them out.
+
+The other similar project is [joho/godotenv](https://github.com/joho/godotenv)
+which again I haven't personally used but from a cursory glance at the readme
+it looks to be doing what I do but better, please go check that project out.
