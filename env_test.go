@@ -1,6 +1,9 @@
 package env_test
 
 import (
+	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/mbaklor/go-env"
@@ -21,6 +24,18 @@ func setEnvs(t *testing.T) {
 	t.Setenv("NEST_STRING", "nested")
 	t.Setenv("NEST_STRING_PTR", "nested pointer")
 
+}
+
+func concatDelim[T any](data []T, delim string) string {
+	del := delim
+	if delim == "" {
+		del = string(os.PathListSeparator)
+	}
+	s := make([]string, 0, len(data))
+	for _, d := range data {
+		s = append(s, fmt.Sprintf("%v", d))
+	}
+	return strings.Join(s, del)
 }
 
 func TestLoad(t *testing.T) {
@@ -124,4 +139,45 @@ func TestPtrLoad(t *testing.T) {
 	err = env.Load(&s)
 	assert.NoError(t, err)
 	assert.NotNil(t, s.NilStruct)
+}
+
+func TestSliceLoad(t *testing.T) {
+	type sliceVars struct {
+		StrSlice   []string `env:"STR_SLICE"`
+		IntSlice   []int    `env:"INT_SLICE"`
+		DelimSlice []string `env:"DELIM_SLICE,delim=,"`
+	}
+
+	var s sliceVars
+	err := env.Load(&s)
+	assert.NoError(t, err)
+	assert.Nil(t, s.StrSlice)
+	assert.Nil(t, s.IntSlice)
+	assert.Nil(t, s.DelimSlice)
+
+	var strSlice = []string{
+		"test1",
+		"test2",
+		"test3",
+	}
+	var intSlice = []int{
+		1,
+		2,
+		3,
+	}
+	var delimSlice = []string{
+		"test3",
+		"test2",
+		"test1",
+	}
+
+	t.Setenv("STR_SLICE", concatDelim(strSlice, ""))
+	t.Setenv("INT_SLICE", concatDelim(intSlice, ""))
+	t.Setenv("DELIM_SLICE", concatDelim(delimSlice, ","))
+
+	err = env.Load(&s)
+	assert.NoError(t, err)
+	assert.Equal(t, strSlice, s.StrSlice)
+	assert.Equal(t, intSlice, s.IntSlice)
+	assert.Equal(t, delimSlice, s.DelimSlice)
 }

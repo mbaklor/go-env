@@ -45,7 +45,7 @@ func loadStruct(rv reflect.Value) (set bool, err error) {
 }
 
 func loadField(field reflect.StructField, val reflect.Value) (set bool, err error) {
-	t := field.Tag.Get("env")
+	t := strings.Split(field.Tag.Get("env"), ",")[0]
 	if t == "-" {
 		return false, nil
 	}
@@ -90,6 +90,14 @@ func loadField(field reflect.StructField, val reflect.Value) (set bool, err erro
 		}
 		val.SetBool(b)
 		set = true
+	case reflect.Slice:
+		if env == "" {
+			return false, nil
+		}
+		set, err = loadSlice(field, val, env)
+		if err != nil {
+			return false, fmt.Errorf("loading \"%s\" as slice: %w", env, err)
+		}
 	default:
 		return false, nil
 	}
@@ -108,6 +116,51 @@ func loadPtr(field reflect.StructField, val reflect.Value) (set bool, err error)
 	}
 	if set {
 		val.Set(newval.Addr())
+	}
+	return set, nil
+}
+
+func loadSlice(field reflect.StructField, val reflect.Value, env string) (set bool, err error) {
+	t := field.Tag.Get("env")
+	delim := ""
+	idx := strings.Index(t, "delim=")
+	if idx > -1 {
+		delim = string(t[idx+6])
+	}
+	if delim == "" {
+		delim = string(os.PathListSeparator)
+	}
+	sl := strings.Split(env, delim)
+	rs := reflect.MakeSlice(field.Type, len(sl), cap(sl))
+	switch field.Type.Elem().Kind() {
+	case reflect.String:
+		for i, str := range sl {
+			rs.Index(i).SetString(str)
+		}
+		val.Set(rs)
+		set = true
+	case reflect.Int:
+		for i, str := range sl {
+			conv, err := strconv.ParseInt(str, 10, 0)
+			if err != nil {
+				return false, err
+			}
+			rs.Index(i).SetInt(conv)
+		}
+		val.Set(rs)
+		set = true
+	case reflect.Bool:
+		for i, str := range sl {
+			conv, err := strconv.ParseBool(str)
+			if err != nil {
+				return false, err
+			}
+			rs.Index(i).SetBool(conv)
+		}
+		val.Set(rs)
+		set = true
+	default:
+		return false, fmt.Errorf("slice of unsupported type %s", field.Type.Elem().Kind())
 	}
 	return set, nil
 }
