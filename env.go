@@ -35,23 +35,6 @@ func loadStruct(rv reflect.Value) (set bool, err error) {
 		if !val.CanSet() {
 			continue
 		}
-		if val.Kind() == reflect.Pointer {
-			ptrSet, err := loadPtr(field, val)
-			if err != nil {
-				return false, fmt.Errorf("loading pointer %s: %w", field.Name, err)
-			}
-			set = set || ptrSet
-			continue
-		}
-		if val.Kind() == reflect.Struct {
-			structSet, err := loadStruct(val)
-			if err != nil {
-				return false, fmt.Errorf("loading struct %s: %w", field.Name, err)
-			}
-			set = set || structSet
-			continue
-
-		}
 		fieldSet, err := loadField(field, val)
 		if err != nil {
 			return false, fmt.Errorf("loading field %s: %w", field.Name, err)
@@ -67,14 +50,27 @@ func loadField(field reflect.StructField, val reflect.Value) (set bool, err erro
 		t = stringToEnvVar(field.Name)
 	}
 	env := os.Getenv(t)
-	if env == "" {
-		return false, nil
-	}
 	switch val.Kind() {
+	case reflect.Struct:
+		set, err = loadStruct(val)
+		if err != nil {
+			return false, fmt.Errorf("loading struct %s: %w", field.Name, err)
+		}
+	case reflect.Pointer:
+		set, err = loadPtr(field, val)
+		if err != nil {
+			return false, fmt.Errorf("loading pointer %s: %w", field.Name, err)
+		}
 	case reflect.String:
+		if env == "" {
+			return false, nil
+		}
 		val.SetString(env)
 		set = true
 	case reflect.Int:
+		if env == "" {
+			return false, nil
+		}
 		i, err := strconv.ParseInt(env, 10, 0)
 		if err != nil {
 			return false, fmt.Errorf("loading \"%s\" as int: %w", env, err)
@@ -82,6 +78,9 @@ func loadField(field reflect.StructField, val reflect.Value) (set bool, err erro
 		val.SetInt(i)
 		set = true
 	case reflect.Bool:
+		if env == "" {
+			return false, nil
+		}
 		b, err := strconv.ParseBool(env)
 		if err != nil {
 			return false, fmt.Errorf("loading \"%s\" as bool: %w", env, err)
