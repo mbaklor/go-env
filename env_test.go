@@ -34,6 +34,7 @@ func TestLoad(t *testing.T) {
 		First  string `env:"FIRST"`
 		Second int    `env:"SECOND"`
 		Third  string `env:"THIRD"`
+		Fourth bool   `env:"-"`
 		Nested nestedStruct
 	}
 
@@ -59,6 +60,7 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, "a string", tt.First)
 	assert.Equal(t, 1234, tt.Second)
 	assert.Equal(t, "more string", tt.Third)
+	assert.Equal(t, false, tt.Fourth)
 	assert.Equal(t, true, tt.Nested.Fourth)
 	assert.Equal(t, -987, tt.Nested.Fifth)
 	assert.Equal(t, "", tt.Nested.Sixth)

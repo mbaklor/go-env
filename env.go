@@ -46,6 +46,9 @@ func loadStruct(rv reflect.Value) (set bool, err error) {
 
 func loadField(field reflect.StructField, val reflect.Value) (set bool, err error) {
 	t := field.Tag.Get("env")
+	if t == "-" {
+		return false, nil
+	}
 	if t == "" {
 		t = stringToEnvVar(field.Name)
 	}
