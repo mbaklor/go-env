@@ -49,6 +49,23 @@ You should see this output
 Database connection: 127.0.0.1:5432
 ```
 
+### Auto load .env file
+
+I added an `autofile` package which should auto load a `.env` file from your
+current directory.
+
+To use this functionality, in the imports in your project add
+
+```go
+import _ "github.com/mbaklor/go-env/autofile"
+```
+
+and the env file should load to the program's environment variables.
+
+Note that any error encountered during the autoload are saved in
+`autofile.AutoLoadFileErr` so you might want to check that if something isn't
+working as expected.
+
 ## Secondary Use: Load .env Files
 
 This package can also be used to load `.env` files.
@@ -100,6 +117,9 @@ Database connection: 127.0.0.1:5432
 - slice of any of the above, including use of a custom delimiter with `delim=`
 - nested struct of any supported types
 - pointer to any supported type
+
+- loading env files
+- autoloading a .env file
 
 ### Planned support
 
