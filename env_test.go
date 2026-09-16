@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mbaklor/go-env"
 	"github.com/stretchr/testify/assert"
@@ -180,4 +181,57 @@ func TestSliceLoad(t *testing.T) {
 	assert.Equal(t, strSlice, s.StrSlice)
 	assert.Equal(t, intSlice, s.IntSlice)
 	assert.Equal(t, delimSlice, s.DelimSlice)
+}
+
+type MyTime struct {
+	time.Time
+}
+
+func (m *MyTime) UnmarshalText(b []byte) error {
+	t, err := time.Parse("15:04:05", string(b))
+	if err != nil {
+		return fmt.Errorf("UnmarshalText for %s: %w", string(b), err)
+	}
+	m.Time = t
+	return nil
+}
+
+type MyDate struct {
+	time.Time
+}
+
+func (m *MyDate) UnmarshalEnv(s string) error {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return fmt.Errorf("UnmarshalText for %s: %w", s, err)
+	}
+	m.Time = t
+	return nil
+}
+
+func TestTimeLoad(t *testing.T) {
+	type timeVars struct {
+		String  string        `env:"STRING"`
+		Now     time.Time     `env:"NOW"`
+		TimeVar MyTime        `env:"TIME"`
+		DateVar MyDate        `env:"DATE"`
+		Since   time.Duration `env:"SINCE"`
+	}
+
+	now := time.Now()
+
+	t.Setenv("STRING", "test")
+	t.Setenv("NOW", now.Format(time.RFC3339Nano))
+	t.Setenv("TIME", "21:30:00")
+	t.Setenv("DATE", "2026-09-17")
+	t.Setenv("SINCE", "2h30m")
+
+	var v timeVars
+	err := env.Load(&v)
+	assert.NoError(t, err)
+	assert.Equal(t, "test", v.String)
+	assert.Equal(t, now.UTC(), v.Now.UTC())
+	assert.Equal(t, "09:30:00 PM", v.TimeVar.Format("03:04:05 PM"))
+	assert.Equal(t, "17/09/26", v.DateVar.Format("02/01/06"))
+	assert.Equal(t, 150.0, v.Since.Minutes())
 }

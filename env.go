@@ -1,13 +1,21 @@
 package env
 
 import (
+	"encoding"
 	"fmt"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
+
+// env.Unmarshaler is the interface for any type that should unmarshal a textual
+// representation of itself from an environment variable
+type Unmarshaler interface {
+	UnmarshalEnv(string) error
+}
 
 // Loads environment variables into a pointer of a stuct, to easily load multiple values.
 //
@@ -53,6 +61,24 @@ func loadField(field reflect.StructField, val reflect.Value) (set bool, err erro
 		t = stringToEnvVar(field.Name)
 	}
 	env := os.Getenv(t)
+
+	envunmarshaler := reflect.TypeFor[Unmarshaler]()
+	if val.Addr().Type().Implements(envunmarshaler) {
+		set, err = loadUnmarshalEnv(field, val, env)
+		if err != nil {
+			return false, fmt.Errorf("loading env.Unmarshaler %s: %w", field.Name, err)
+		}
+		return set, nil
+	}
+	textunmarshaler := reflect.TypeFor[encoding.TextUnmarshaler]()
+	if val.Addr().Type().Implements(textunmarshaler) {
+		set, err = loadUnmarshalText(field, val, env)
+		if err != nil {
+			return false, fmt.Errorf("loading encoding.TextUnmarshaler %s: %w", field.Name, err)
+		}
+		return set, nil
+	}
+
 	switch val.Kind() {
 	case reflect.Struct:
 		set, err = loadStruct(val)
@@ -99,6 +125,14 @@ func loadField(field reflect.StructField, val reflect.Value) (set bool, err erro
 			return false, fmt.Errorf("loading \"%s\" as slice: %w", env, err)
 		}
 	default:
+		if field.Type.Name() == "Duration" {
+			d, err := time.ParseDuration(env)
+			if err != nil {
+				return false, fmt.Errorf("loading \"%s\" as time.Duration: %w", env, err)
+			}
+			val.Set(reflect.ValueOf(d))
+			return true, nil
+		}
 		return false, nil
 	}
 	return set, nil
@@ -163,6 +197,38 @@ func loadSlice(field reflect.StructField, val reflect.Value, env string) (set bo
 		return false, fmt.Errorf("slice of unsupported type %s", field.Type.Elem().Kind())
 	}
 	return set, nil
+}
+
+func loadUnmarshalEnv(field reflect.StructField, val reflect.Value, env string) (set bool, err error) {
+	unmarshal := val.Addr().MethodByName("UnmarshalEnv")
+	envVal := reflect.ValueOf(env)
+	ret := unmarshal.Call([]reflect.Value{envVal})
+	if !ret[0].IsNil() {
+		err, ok := ret[0].Interface().(error)
+		if !ok {
+			return false, fmt.Errorf("unknown error in UnmarshalEnv call on field \"%s\"", field.Name)
+		}
+		if err != nil {
+			return false, fmt.Errorf("failed to UnmarshalEnv on value \"%s\": %w", env, err)
+		}
+	}
+	return true, nil
+}
+
+func loadUnmarshalText(field reflect.StructField, val reflect.Value, env string) (set bool, err error) {
+	unmarshal := val.Addr().MethodByName("UnmarshalText")
+	byteVal := reflect.ValueOf([]byte(env))
+	ret := unmarshal.Call([]reflect.Value{byteVal})
+	if !ret[0].IsNil() {
+		err, ok := ret[0].Interface().(error)
+		if !ok {
+			return false, fmt.Errorf("unknown error in UnmarshalText call on field \"%s\"", field.Name)
+		}
+		if err != nil {
+			return false, fmt.Errorf("failed to UnmarshalText on value \"%s\": %w", env, err)
+		}
+	}
+	return true, nil
 }
 
 // Takes a camel case string and converts it to upper case snake string
